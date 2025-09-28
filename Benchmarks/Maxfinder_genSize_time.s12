@@ -1,0 +1,81 @@
+// Benchmark: Maxfinder_genSize_time
+// Authors: Rhys Brooks (Section: <your section>)
+// Description: Given n at 0xFF and n elements at addresses 0xFF - n .. 0xFF - 1,
+//              write the maximum to address (0xFF - n - 2).
+// Usage: Edit the mem file's data block for your own dataset. The program expects:
+//        - n at 0xFF
+//        - elements packed at the top of memory, last element at 0xFF-1
+// Notes: Pure S12 ISA (JMP, JN, JZ, LOAD, STORE, LOADI, STOREI, AND, OR, ADD, SUB, HALT).
+//        S12 has NO immediates; constants live in RAM (see A0..A2).
+//
+// Low RAM variables/constants:
+//   A0 = 0xA0 : holds constant 0xFF
+//   A1 = 0xA1 : holds constant 0x001
+//   A2 = 0xA2 : holds constant 0x002
+//   A3 = 0xA3 : CNT (copy of n)
+//   A4 = 0xA4 : P   (pointer to current element)
+//   A5 = 0xA5 : OUT (address where result is written)
+//   A6 = 0xA6 : MAX (running maximum)
+//
+// Program origin: 0x00
+
+; OUT = 0xFF - n - 2  --> OUT address goes into A5
+LOAD A0        ; ACC ← [A0] = 0xFF
+SUB  FF        ; ACC ← 0xFF - n
+SUB  A2        ; ACC ← (0xFF - n) - 2
+STORE A5       ; A5 ← OUT address
+
+; CNT = n
+LOAD FF        ; ACC ← n
+STORE A3       ; A3 (CNT) ← n
+
+; P = 0xFF - 1
+LOAD A0        ; ACC ← 0xFF
+SUB  A1        ; ACC ← 0xFF - 1
+STORE A4       ; A4 (P) ← pointer to last element
+
+; if CNT == 0 => *OUT = 0, HALT
+LOAD A3        ; ACC ← CNT
+JZ   done_zero ; if CNT==0 jump to zero case
+
+; seed MAX = *P, then P--, CNT--
+LOADI A4       ; ACC ← *P
+STORE A6       ; MAX ← *P
+LOAD A4        ; ACC ← P
+SUB  A1        ; ACC ← P - 1
+STORE A4       ; P ← P - 1
+LOAD A3        ; ACC ← CNT
+SUB  A1        ; ACC ← CNT - 1
+STORE A3       ; CNT ← CNT - 1
+
+loop:
+LOAD A3        ; ACC ← CNT
+JZ   store_result ; if CNT==0, jump to store result
+
+LOADI A4       ; ACC ← *P
+SUB  A6        ; ACC ← *P - MAX
+JN   advance   ; if (*P - MAX) < 0, skip update
+
+LOADI A4       ; ACC ← *P
+STORE A6       ; MAX ← *P
+
+advance:
+LOAD A4        ; ACC ← P
+SUB  A1        ; ACC ← P - 1
+STORE A4       ; P ← P - 1
+LOAD A3        ; ACC ← CNT
+SUB  A1        ; ACC ← CNT - 1
+STORE A3       ; CNT ← CNT - 1
+JMP  loop      ; repeat loop
+
+store_result:
+LOAD A6        ; ACC ← MAX
+STOREI A5      ; *OUT ← MAX
+HALT           ; stop
+
+done_zero:
+LOAD A3        ; ACC ← 0 (CNT is 0 here)
+SUB  A3        ; ACC ← 0 - 0 = 0
+STOREI A5      ; *OUT ← 0
+HALT           ; stop
+

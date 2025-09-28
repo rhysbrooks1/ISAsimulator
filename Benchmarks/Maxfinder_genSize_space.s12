@@ -1,0 +1,64 @@
+// Benchmark: Maxfinder_genSize_space
+// Authors: Rhys Brooks 
+// Description: Same task as time version; minimizes auxiliary state.
+//              Uses 0xFF destructively as loop counter; keeps MAX in A6.
+// Usage: See mem file for example data layout.
+
+; OUT = 0xFF - n - 2  --> OUT address into A5
+LOAD A0        ; ACC ← [A0] = 0xFF
+SUB  FF        ; ACC ← 0xFF - n
+SUB  A2        ; ACC ← (0xFF - n) - 2
+STORE A5       ; A5 (OUT) ← result address
+
+; P = 0xFF - 1
+LOAD A0        ; ACC ← 0xFF
+SUB  A1        ; ACC ← 0xFF - 1
+STORE A4       ; A4 (P) ← pointer to last element
+
+; if n==0 => *OUT=0, HALT
+LOAD FF        ; ACC ← n
+JZ   store0    ; if n==0, jump to store0
+
+; seed MAX = *P
+LOADI A4       ; ACC ← *P
+STORE A6       ; MAX ← *P
+
+; P--, n--
+LOAD A4        ; ACC ← P
+SUB  A1        ; ACC ← P - 1
+STORE A4       ; P ← P - 1
+LOAD FF        ; ACC ← n
+SUB  A1        ; ACC ← n - 1
+STORE FF       ; n ← n - 1
+
+loop:
+LOAD FF        ; ACC ← n
+JZ   done      ; if n==0, jump to done
+
+LOADI A4       ; ACC ← *P
+SUB  A6        ; ACC ← *P - MAX
+JN   adv       ; if (*P < MAX), skip update
+
+LOADI A4       ; ACC ← *P
+STORE A6       ; MAX ← *P
+
+adv:
+LOAD A4        ; ACC ← P
+SUB  A1        ; ACC ← P - 1
+STORE A4       ; P ← P - 1
+LOAD FF        ; ACC ← n
+SUB  A1        ; ACC ← n - 1
+STORE FF       ; n ← n - 1
+JMP  loop      ; repeat loop
+
+store0:
+LOAD FF        ; ACC ← 0 (since n=0)
+SUB  FF        ; ACC ← 0 - 0 = 0
+STOREI A5      ; *OUT ← 0
+HALT           ; stop
+
+done:
+LOAD A6        ; ACC ← MAX
+STOREI A5      ; *OUT ← MAX
+HALT           ; stop
+
