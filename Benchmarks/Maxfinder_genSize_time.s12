@@ -1,8 +1,8 @@
 // Benchmark: Maxfinder_genSize_time
-// Authors: Rhys Brooks (Section: <your section>)
+// Authors: Rhys Brooks 
 // Description: Given n at 0xFF and n elements at addresses 0xFF - n .. 0xFF - 1,
 //              write the maximum to address (0xFF - n - 2).
-// Usage: Edit the mem file's data block for your own dataset. The program expects:
+// The program expects:
 //        - n at 0xFF
 //        - elements packed at the top of memory, last element at 0xFF-1
 // Notes: Pure S12 ISA (JMP, JN, JZ, LOAD, STORE, LOADI, STOREI, AND, OR, ADD, SUB, HALT).
